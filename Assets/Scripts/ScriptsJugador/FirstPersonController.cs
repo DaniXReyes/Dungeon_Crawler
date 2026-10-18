@@ -4,8 +4,10 @@ using UnityEngine;
 public class FirstPersonController : MonoBehaviour
 {
     [Header("Configuración de Movimiento")]
-    public float moveSpeed = 5f;
-    public float gravity = -9.81f;
+    public float walkSpeed = 5f;
+    public float sprintSpeed = 8f;
+    public float jumpHeight = 1.2f;
+    public float gravity = -19.62f; // Gravedad aumentada (x2) para que el salto sea más ágil y realista
 
     [Header("Configuración de Cámara")]
     public Transform playerCamera;
@@ -20,7 +22,7 @@ public class FirstPersonController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         
-        // Bloquea y oculta el cursor en el centro de la pantalla para explorar cómodamente
+        // Bloquea y oculta el cursor en el centro de la pantalla
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -33,8 +35,10 @@ public class FirstPersonController : MonoBehaviour
 
     private void HandleMovement()
     {
+        bool isGrounded = controller.isGrounded;
+
         // Resetea la velocidad vertical si está tocando el suelo
-        if (controller.isGrounded && velocity.y < 0)
+        if (isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
         }
@@ -43,9 +47,19 @@ public class FirstPersonController : MonoBehaviour
         float moveX = Input.GetAxis("Horizontal");
         float moveZ = Input.GetAxis("Vertical");
 
+        // Comprobar si se mantiene pulsado Left Shift para correr
+        float currentSpeed = Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : walkSpeed;
+
         // Dirección local respecto a hacia dónde mira el personaje
         Vector3 move = transform.right * moveX + transform.forward * moveZ;
-        controller.Move(move * moveSpeed * Time.deltaTime);
+        controller.Move(move * currentSpeed * Time.deltaTime);
+
+        // Salto con la barra espaciadora (solo si está en el suelo)
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            // Fórmula física para alcanzar exactamente la altura deseada
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
 
         // Aplicar gravedad
         velocity.y += gravity * Time.deltaTime;
